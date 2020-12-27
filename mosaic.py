@@ -12,8 +12,8 @@ from math import ceil
 from PIL import Image, ImageDraw
 import os
 import pickle
-from utils import log_progress, imshow
-
+from utils import log_progress, imshow, create_image_grid, show_animation
+import imageio
 class Mosaic:
     def __init__(self, path):
         dnnlib.tflib.init_tf()
@@ -64,8 +64,26 @@ class Mosaic:
 
     # Generates a list of images, based on a list of seed for latent vectors (Z), and a list (or a single constant) of truncation_psi's.
     def generate_images_from_seeds(self, seeds, truncation_psi):
-        return imshow(self.generate_images(self.generate_zs_from_seeds(seeds), truncation_psi))
+        return imshow(self.generate_images(self.generate_zs_from_seeds(seeds), truncation_psi)[0])
 
+    def generate_randomly(self, truncation_psi = 0.5):
+        return self.generate_images_from_seeds(np.random.randint(4294967295, size=1), truncation_psi=truncation_psi)
+
+    def generate_grid(self, truncation_psi = 0.7): 
+      seeds = np.random.randint((2**32 - 1), size=9)
+      return create_image_grid(self.generate_images(self.generate_zs_from_seeds(seeds), truncation_psi), 0.7 , 3)
+    
+    def generate_animation(self, size = 9, steps = 10, trunc_psi = 0.5):
+      seeds = list(np.random.randint((2**32) - 1, size=size))
+      seeds = seeds + [seeds[0]]
+      zs = self.generate_zs_from_seeds(seeds)
+
+      imgs = self.generate_images(self.interpolate(zs, steps = steps), trunc_psi)
+      movie_name = 'animation.mp4'
+      with imageio.get_writer(movie_name, mode='I') as writer:
+        for image in log_progress(list(imgs), name = "Creating animation"):
+            writer.append_data(np.array(image))
+      return show_animation(movie_name)
 
     def convertZtoW(self, latent, truncation_psi=0.7, truncation_cutoff=9):
         dlatent = self.Gs.components.mapping.run(latent, None) # [seed, layer, component]
@@ -75,7 +93,7 @@ class Mosaic:
             
         return dlatent
 
-    def interpolate(self, zs, steps):
+    def interpolate(self, zs, steps = 10):
         out = []
         for i in range(len(zs)-1):
             for index in range(steps):

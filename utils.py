@@ -9,6 +9,19 @@ from math import ceil
 from PIL import Image, ImageDraw
 import os
 
+from IPython.display import HTML
+from base64 import b64encode
+import imageio
+
+def show_animation(movie_name):
+  mp4 = open(movie_name,'rb').read()
+  data_url = "data:video/mp4;base64," + b64encode(mp4).decode()
+  return HTML("""
+  <video width=400 controls>
+        <source src="%s" type="video/mp4">
+  </video>
+  """ % data_url)
+
 def imshow(a, format='png', jpeg_fallback=True):
         a = np.asarray(a, dtype=np.uint8)
         str_file = BytesIO()

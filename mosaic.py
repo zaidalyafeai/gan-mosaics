@@ -53,6 +53,31 @@ class Mosaic:
             images = self.Gs.run(z, None, **Gs_kwargs) # [minibatch, height, width, channel]
             imgs.append(PIL.Image.fromarray(images[0], 'RGB'))
         return imgs
+    
+    def generate_from_zs(self, zs, truncation_psi = 0.5):
+        Gs_kwargs = dnnlib.EasyDict()
+        Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
+        Gs_kwargs.randomize_noise = False
+        if not isinstance(truncation_psi, list):
+            truncation_psi = [truncation_psi] * len(zs)
+            
+        for z_idx, z in log_progress(enumerate(zs), size = len(zs), name = "Generating images"):
+            Gs_kwargs.truncation_psi = truncation_psi[z_idx]
+            noise_rnd = np.random.RandomState(1) # fix noise
+            tflib.set_vars({var: noise_rnd.randn(*var.shape.as_list()) for var in self.noise_vars}) # [height, width]
+            images = self.Gs.run(z, None, **Gs_kwargs) # [minibatch, height, width, channel]
+            img = PIL.Image.fromarray(images[0], 'RGB')
+            imshow(img)
+
+    def generate_random_zs(self, size):
+        seeds = np.random.randint(2**32, size=size)
+        zs = []
+        for _, seed in enumerate(seeds):
+            rnd = np.random.RandomState(seed)
+            z = rnd.randn(1, *self.Gs.input_shape[1:]) # [minibatch, component]
+            zs.append(z)
+        return zs
+
 
     def generate_zs_from_seeds(self, seeds):
         zs = []

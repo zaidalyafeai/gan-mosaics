@@ -9,7 +9,9 @@ fmt = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
 @runway.setup(options={'checkpoint': runway.file(extension='.pkl')})
 def setup(opts):
     global Gs
+    print('init')
     tflib.init_tf()
+    print('reading pickle file')
     with open(opts['checkpoint'], 'rb') as file:
         _G, _D, Gs = pickle.load(file, encoding='latin1')
     print('Create noise')

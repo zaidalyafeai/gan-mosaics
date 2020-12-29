@@ -12,6 +12,7 @@ def setup(opts):
     tflib.init_tf()
     with open(opts['checkpoint'], 'rb') as file:
         _G, _D, Gs = pickle.load(file, encoding='latin1')
+    print('Create noise')
     noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
     rnd = np.random.RandomState()
     tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars})
@@ -28,6 +29,7 @@ generate_inputs = {
 @runway.command('generate', inputs=generate_inputs, outputs={'image': runway.image})
 def convert(model, inputs):
     z = inputs['z']
+    print(z)
     label = int(inputs['label'])
     scale = inputs['scale']
     truncation = inputs['truncation']
